@@ -4,10 +4,10 @@ from telethon.network.connection.tcpabridged import ConnectionTcpAbridged
 
 from ..Config import Config
 from .bothseesion import bothseesion
-from .client import JmthonClient
+from .client import CatUserBotClient
 from .logger import logging
 
-LOGS = logging.getLogger("سورس جمثون")
+LOGS = logging.getLogger("userbot")
 __version__ = "2.10.6"
 
 loop = None
@@ -15,10 +15,10 @@ loop = None
 if Config.STRING_SESSION:
     session = bothseesion(Config.STRING_SESSION, LOGS)
 else:
-    session = "jmthon"
+    session = "catuserbot""
 
 try:
-    sbb_b = JmthonClient(
+    catub = CatUserBotClient(
         session=session,
         api_id=Config.APP_ID,
         api_hash=Config.API_HASH,
@@ -34,8 +34,8 @@ except Exception as e:
     )
     sys.exit()
 
-sbb_b.tgbot = tgbot = JmthonClient(
-    session="jmthonTgbot",
+catub.tgbot = tgbot = CatUserBotClient(
+    session="CatUserBotClient",
     api_id=Config.APP_ID,
     api_hash=Config.API_HASH,
     loop=loop,
