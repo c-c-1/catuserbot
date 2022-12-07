@@ -36,10 +36,6 @@ from .pluginManager import get_message_link, restart_script
 
 LOGS = logging.getLogger(__name__)
 
-DEVS = [
-    1280124974,  # @R0R77
-]
-
 
 class REGEX:
     def __init__(self):
@@ -52,8 +48,8 @@ REGEX_ = REGEX()
 sudo_enabledcmds = sudo_enabled_cmds()
 
 
-class JmthonClient(TelegramClient):
-    def ar_cmd(
+class CatUserBotClient(TelegramClient):
+    def cat_cmd(
         self: TelegramClient,
         pattern: str or tuple = None,
         info: Union[str, Dict[str, Union[str, List[str], Dict[str, str]]]]
@@ -109,17 +105,13 @@ class JmthonClient(TelegramClient):
             async def wrapper(check):  # sourcery no-metrics
                 # sourcery skip: low-code-quality
                 if groups_only and not check.is_group:
-                    return await edit_delete(check, "- يستخدم الامر في المجموعات ", 10)
-                chat = check.chat
-                if hasattr(chat, "title"):
-                    if (
-                        "#jmthon" in chat.title.lower()
-                        and not (chat.admin_rights or chat.creator)
-                        and not (check.sender_id in DEVS)
-                    ):
-                        return
+                    return await edit_delete(
+                        check, "`I don't think this is a group.`", 10
+                    )
                 if private_only and not check.is_private:
-                    return await edit_delete(check, "- يستخدم الامر فقط في الخاص ", 10)
+                    return await edit_delete(
+                        check, "`I don't think this is a personal Chat.`", 10
+                    )
                 try:
                     await func(check)
                 except events.StopPropagation as e:
@@ -127,30 +119,34 @@ class JmthonClient(TelegramClient):
                 except KeyboardInterrupt:
                     pass
                 except MessageNotModifiedError:
-                    LOGS.error("نفس الرسالة السابقة")
+                    LOGS.error("Message was same as previous message")
                 except MessageIdInvalidError:
-                    LOGS.error("الرسالة محذوفة او ما حصلتها")
+                    LOGS.error("Message was deleted or cant be found")
                 except BotInlineDisabledError:
-                    await edit_delete(check, "- يجب عليك تفعيل وضع الانلاين اولا`", 10)
+                    await edit_delete(check, "`Turn on Inline mode for our bot`", 10)
                 except ChatSendStickersForbiddenError:
-                    await edit_delete(check, "- لا يمكنني ارسال الملصقات هنا ", 10)
+                    await edit_delete(
+                        check, "`I guess i can't send stickers in this chat`", 10
+                    )
                 except BotResponseTimeoutError:
-                    await edit_delete(check, "- استخدم الامر في وقت ثاني", 10)
+                    await edit_delete(
+                        check, "`The bot didnt answer to your query in time`", 10
+                    )
                 except ChatSendMediaForbiddenError:
-                    await edit_delete(check, "**- لا يمكنك ارسال الميديا هنا **", 10)
+                    await edit_delete(check, "`You can't send media in this chat`", 10)
                 except AlreadyInConversationError:
                     await edit_delete(
                         check,
-                        "- المحادثة تجري مع الدردشة بالفعل حاول مره اخرى في وقت ثاني",
+                        "`A conversation is already happening with the given chat. try again after some time.`",
                         10,
                     )
                 except ChatSendInlineForbiddenError:
                     await edit_delete(
-                        check, "- لا يمكنك ارسال الانلاين في هذه الدردشة", 10
+                        check, "`You can't send inline messages in this chat.`", 10
                     )
                 except FloodWaitError as e:
                     LOGS.error(
-                        f"فلود {e.seconds} انتظر لمدة {e.seconds} ثانية  بعدها استعمل"
+                        f"A flood wait of {e.seconds} occured. wait for {e.seconds} seconds and try"
                     )
                     await check.delete()
                     await asyncio.sleep(e.seconds + 5)
@@ -160,23 +156,23 @@ class JmthonClient(TelegramClient):
                         if Config.PRIVATE_GROUP_BOT_API_ID == 0:
                             return
                         date = (datetime.datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-                        ftext = f"\nتحذير:\nهذا الملف تم لصقه هنا فقط\
-                                  \nتم اخذ فقط الخلل ومعلوماته\nنحن نحترم خصوصيتك\
-                                  \nيمكنك التبليغ او قرائته\
-                                  \nاي بيانات مهمة لم يتم حفظها هنا\
-                                  \n\n--------بدايه تسجيل الخطأ--------\
-                                  \nالوقت: {date}\nايدي الكروب: {str(check.chat_id)}\
-                                  \nايدي المرسل: {str(check.sender_id)}\
-                                  \nرابط الرسالة: {await check.client.get_msg_link(check)}\
-                                  \n\nتاك للحدث:\n{str(check.text)}\
-                                  \n\nمعلومات المشكله:\n{str(traceback.format_exc())}\
-                                  \n\nنص الخطأ:\n{str(sys.exc_info()[1])}"
+                        ftext = f"\nDisclaimer:\nThis file is pasted only here ONLY here,\
+                                  \nwe logged only fact of error and date,\nwe respect your privacy,\
+                                  \nyou may not report this error if you've\
+                                  \nany confidential data here, no one will see your data\
+                                  \n\n--------BEGIN USERBOT TRACEBACK LOG--------\
+                                  \nDate: {date}\nGroup ID: {str(check.chat_id)}\
+                                  \nSender ID: {str(check.sender_id)}\
+                                  \nMessage Link: {await check.client.get_msg_link(check)}\
+                                  \n\nEvent Trigger:\n{str(check.text)}\
+                                  \n\nTraceback info:\n{str(traceback.format_exc())}\
+                                  \n\nError text:\n{str(sys.exc_info()[1])}"
                         new = {
                             "error": str(sys.exc_info()[1]),
                             "date": datetime.datetime.now(),
                         }
-                        ftext += "\n\n--------نهاية تسجيل الخطأ-------"
-                        ftext += "\n\n\nاخر 5 تعديلات:\n"
+                        ftext += "\n\n--------END USERBOT TRACEBACK LOG--------"
+                        ftext += "\n\n\nLast 5 commits:\n"
                         command = 'git log --pretty=format:"%an: %s" -5'
                         output = (await runcmd(command))[:2]
                         result = output[0] + output[1]
@@ -184,16 +180,21 @@ class JmthonClient(TelegramClient):
                         pastelink = await paste_message(
                             ftext, pastetype="s", markdown=False
                         )
-                        link = "[هنا](https://t.me/jmthon_support)"
-                        text = "**تقرير خطأ سورس جمثون**\n\n" + "اذا اردت يمكنك التبليغ"
-                        text += f"- فقط وجه هذه الرسالة الى {link}.\n"
-                        text += "لم يتم تسجيل اي بيانات خاصه ومهمة\n\n"
-                        text += f"**تقرير الخطأ : ** [{new['error']}]({pastelink})"
+                        link = "[here](https://t.me/catuserbot_support)"
+                        text = (
+                            "**CatUserbot Error report**\n\n"
+                            + "If you wanna you can report it"
+                        )
+                        text += f"- just forward this message {link}.\n"
+                        text += (
+                            "Nothing is logged except the fact of error and date\n\n"
+                        )
+                        text += f"**Error report : ** [{new['error']}]({pastelink})"
                         await check.client.send_message(
                             Config.PRIVATE_GROUP_BOT_API_ID, text, link_preview=False
                         )
 
-            from .session import sbb_b
+            from .session import catub
 
             if not func.__doc__ is None:
                 CMD_INFO[command[0]].append((func.__doc__).strip())
@@ -206,18 +207,18 @@ class JmthonClient(TelegramClient):
                     except BaseException:
                         LOADED_CMDS.update({command[0]: [wrapper]})
                 if edited:
-                    sbb_b.add_event_handler(
+                    catub.add_event_handler(
                         wrapper,
                         MessageEdited(pattern=REGEX_.regex1, outgoing=True, **kwargs),
                     )
-                sbb_b.add_event_handler(
+                catub.add_event_handler(
                     wrapper,
                     NewMessage(pattern=REGEX_.regex1, outgoing=True, **kwargs),
                 )
                 if allow_sudo and gvarstatus("sudoenable") is not None:
                     if command is None or command[0] in sudo_enabledcmds:
                         if edited:
-                            sbb_b.add_event_handler(
+                            catub.add_event_handler(
                                 wrapper,
                                 MessageEdited(
                                     pattern=REGEX_.regex2,
@@ -225,7 +226,7 @@ class JmthonClient(TelegramClient):
                                     **kwargs,
                                 ),
                             )
-                        sbb_b.add_event_handler(
+                        catub.add_event_handler(
                             wrapper,
                             NewMessage(
                                 pattern=REGEX_.regex2,
@@ -241,8 +242,8 @@ class JmthonClient(TelegramClient):
                 except BaseException:
                     LOADED_CMDS.update({file_test: [func]})
                 if edited:
-                    sbb_b.add_event_handler(func, events.MessageEdited(**kwargs))
-                sbb_b.add_event_handler(func, events.NewMessage(**kwargs))
+                    catub.add_event_handler(func, events.MessageEdited(**kwargs))
+                catub.add_event_handler(func, events.NewMessage(**kwargs))
             return wrapper
 
         return decorator
@@ -266,31 +267,32 @@ class JmthonClient(TelegramClient):
                 except KeyboardInterrupt:
                     pass
                 except MessageNotModifiedError:
-                    LOGS.error("الرسالة مثل الرسالة السابقه لم يحصل شي")
+                    LOGS.error("Message was same as previous message")
                 except MessageIdInvalidError:
-                    LOGS.error("لم يتم العثور على الرسالة")
+                    LOGS.error("Message was deleted or cant be found")
                 except BaseException as e:
-                    LOGS.exception(e)
+                    # Check if we have to disable error logging.
+                    LOGS.exception(e)  # Log the error in console
                     if not disable_errors:
                         if Config.PRIVATE_GROUP_BOT_API_ID == 0:
                             return
                         date = (datetime.datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-                        ftext = f"\nتحذير:\nهذا الملف تم لصقه هنا فقط\
-                                  \nتم اخذ فقط الخلل ومعلوماته\nنحن نحترم خصوصيتك\
-                                  \nيمكنك التبليغ او قرائته\
-                                  \nاي بيانات مهمة لم يتم حفظها هنا\
-                                  \n\n--------بدايه تسجيل الخطأ--------\
-                                    \nالوقت: {date}\nايدي الكروب: {str(check.chat_id)}\
-                                    \nايدي المرسل: {str(check.sender_id)}\
-                                    \nرابط الرسالة: {await check.client.get_msg_link(check)}\
-                                    \n\nتاك الحدث:\n{str(check.text)}\
-                                    \n\nمعلومات المشكلة:\n{str(traceback.format_exc())}\
-                                    \n\nنص الخطأ:\n{str(sys.exc_info()[1])}"
+                        ftext = f"\nDisclaimer:\nThis file is pasted only here ONLY here,\
+                                    \nwe logged only fact of error and date,\nwe respect your privacy,\
+                                    \nyou may not report this error if you've\
+                                    \nany confidential data here, no one will see your data\
+                                    \n\n--------BEGIN USERBOT TRACEBACK LOG--------\
+                                    \nDate: {date}\nGroup ID: {str(check.chat_id)}\
+                                    \nSender ID: {str(check.sender_id)}\
+                                    \nMessage Link: {await check.client.get_msg_link(check)}\
+                                    \n\nEvent Trigger:\n{str(check.text)}\
+                                    \n\nTraceback info:\n{str(traceback.format_exc())}\
+                                    \n\nError text:\n{str(sys.exc_info()[1])}"
                         new = {
                             "error": str(sys.exc_info()[1]),
                             "date": datetime.datetime.now(),
                         }
-                        ftext += "\n\n--------نهاية تسجيل الخطأ--------"
+                        ftext += "\n\n--------END USERBOT TRACEBACK LOG--------"
                         command = 'git log --pretty=format:"%an: %s" -5'
                         ftext += "\n\n\nLast 5 commits:\n"
                         output = (await runcmd(command))[:2]
@@ -299,21 +301,26 @@ class JmthonClient(TelegramClient):
                         pastelink = await paste_message(
                             ftext, pastetype="s", markdown=False
                         )
-                        link = "[هنا](https://t.me/jmthon_support)"
-                        text = "**تقرير خطأ جمثون**\n\n" + "يمكنك التبليغ عنه"
-                        text += f"- حول هذه الرسالة الى هنا{link}.\n"
-                        text += "لم يتم تسجيل اي بيانات خاصة فقط المشكلة\n\n"
-                        text += f"**تقرير الخطأ : ** [{new['error']}]({pastelink})"
+                        link = "[here](https://t.me/catuserbot_support)"
+                        text = (
+                            "**CatUserbot Error report**\n\n"
+                            + "If you wanna you can report it"
+                        )
+                        text += f"- just forward this message {link}.\n"
+                        text += (
+                            "Nothing is logged except the fact of error and date\n\n"
+                        )
+                        text += f"**Error report : ** [{new['error']}]({pastelink})"
                         await check.client.send_message(
                             Config.PRIVATE_GROUP_BOT_API_ID, text, link_preview=False
                         )
 
-            from .session import sbb_b
+            from .session import catub
 
             if edited is True:
-                sbb_b.tgbot.add_event_handler(func, events.MessageEdited(**kwargs))
+                catub.tgbot.add_event_handler(func, events.MessageEdited(**kwargs))
             else:
-                sbb_b.tgbot.add_event_handler(func, events.NewMessage(**kwargs))
+                catub.tgbot.add_event_handler(func, events.NewMessage(**kwargs))
 
             return wrapper
 
@@ -334,30 +341,15 @@ class JmthonClient(TelegramClient):
                 LOGS.debug(e)
         self.running_processes.clear()
 
-    def uid(self):
-        """Client's user id"""
-        self.me = self.get_chat("me")
-        if self.me.bot:
-            f"@{self.me.username}"
-        else:
-            setattr(self.me, "phone", None)
-            self.full_name
-        return self.me.id
 
-    def full_name(self):
-        """full name of Client"""
-        return self.utils.get_display_name(self.me)
-
-
-JmthonClient.fast_download_file = download_file
-JmthonClient.fast_upload_file = upload_file
-JmthonClient.reload = restart_script
-JmthonClient.get_msg_link = get_message_link
-JmthonClient.check_testcases = checking
-
+CatUserBotClient.fast_download_file = download_file
+CatUserBotClient.fast_upload_file = upload_file
+CatUserBotClient.reload = restart_script
+CatUserBotClient.get_msg_link = get_message_link
+CatUserBotClient.check_testcases = checking
 try:
     send_message_check = TelegramClient.send_message
 except AttributeError:
-    JmthonClient.send_message = send_message
-    JmthonClient.send_file = send_file
-    JmthonClient.edit_message = edit_message
+    CatUserBotClient.send_message = send_message
+    CatUserBotClient.send_file = send_file
+    CatUserBotClient.edit_message = edit_message
