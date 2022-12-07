@@ -39,6 +39,28 @@
             "description": "لا تغيره نهائيا!",
             "required": true,
             "value": "ANYTHING"
+        },
+        "DB_URI": {
+            "description": "SQL",
+            "required": true,
+            "value": ""
+        },
+        "COMMAND_HAND_LER": {
+            "description": "الاوامر",
+            "required": true,
+            "value": "."
+        },
+        "BADCAT": {
+            "description": "باد",
+            "required": true,
+            "value": "True"
+        },
+        "PM_LOGGER_GROUP_ID": {
+            "description": "قروب",
+            "required": true,
+            "value": ""
+
+
         }
 
     }
